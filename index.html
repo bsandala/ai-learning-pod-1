@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Learning Pod – Feedback & Agenda Planner</title>
+  <style>
+    :root { --bg:#f8fafc; --card:#fff; --text:#0f172a; --muted:#64748b; --border:#e2e8f0; --primary:#0b3d91; --accent:#0052cc; --lightblue:#eef5ff; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(#f8fafc,#fff);color:var(--text)}
+    .container{max-width:1100px;margin:0 auto;padding:20px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap}
+    h1{font-size:1.5rem;margin:0 0 4px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand img{height:40px; width:auto; object-fit:contain}
+    .brand .title{display:flex; flex-direction:column}
+    .btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-weight:600;transition:transform .02s ease}
+    .btn:hover{transform:translateY(-1px)}
+    .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .btn.warn{background:#d32f2f;color:#fff;border-color:#d32f2f}
+    .grid{display:grid;gap:16px}
+    @media(min-width:800px){.grid.two{grid-template-columns:1fr 1fr}}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+    .card h2{margin:0;font-size:1rem}
+    .card .head{padding:14px 16px;border-bottom:2px solid var(--primary);background:var(--lightblue)}
+    .card .body{padding:16px}
+    label{font-size:.9rem;color:var(--muted);display:block;margin-bottom:6px}
+    input[type=text],input[type=date],select,textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#fff}
+    textarea{resize:vertical}
+    .row{display:grid;gap:12px}
+    @media(min-width:800px){.row.quad{grid-template-columns:1fr 2fr 1fr}}
+    .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;cursor:pointer}
+    .pill.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .table{width:100%;border-collapse:collapse;font-size:.9rem}
+    .table th,.table td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
+    .table thead th{position:sticky;top:0;background:#f1f5f9}
+    .muted{color:var(--muted)}
+    .stars button{border:0;background:transparent;font-size:20px;line-height:1;cursor:pointer;padding:4px}
+    .stars .on{color:#f59e0b}
+    .scroll{max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:12px}
+    footer{text-align:center;font-size:.8rem;color:var(--primary);padding:28px 0;background:var(--lightblue)}
+    canvas{display:block;width:100%;height:100%}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .badge{font-size:.8rem; color:#0b3d91; border:1px solid #cfe0ff; background:#eef5ff; padding:2px 8px; border-radius:999px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <!-- Baked-in placeholder logo (inline SVG). Swap later by replacing this data URL. -->
+        <img id="logoImg" alt="Logo" src="data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' width='320' height='80' viewBox='0 0 320 80'><rect width='320' height='80' fill='white'/><text x='16' y='52' font-family='Arial, Helvetica, sans-serif' font-weight='700' font-size='28' fill='%230b3d91'>College Board</text><text x='16' y='74' font-family='Arial, Helvetica, sans-serif' font-size='14' fill='%230b3d91'>AI Learning Pod</text></svg>" />
+        <div class="title">
+          <h1>Feedback & Agenda Planner</h1>
+          <span class="badge">AP | Internal Learning Pod</span>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="exportBtn" class="btn">⬇️ Export CSV</button>
+        <button id="clearBtn" class="btn warn">🗑️ Clear All</button>
+      </div>
+    </header>
+
+    <div class="grid two">
+      <div class="card">
+        <div class="head"><h2>Add a Session</h2></div>
+        <div class="body">
+          <div class="row" style="grid-template-columns: 1fr 2fr auto; gap: 10px;">
+            <div>
+              <label for="newDate">Date</label>
+              <input id="newDate" type="date"/>
+            </div>
+            <div>
+              <label for="newTitle">Title</label>
+              <input id="newTitle" type="text" placeholder="e.g., Prompting Patterns, Retrieval, Eval"/>
+            </div>
+            <div style="align-self: end;">
+              <button id="addSessionBtn" class="btn">＋ Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="head"><h2>Manage Pod Members</h2></div>
+        <div class="body">
+          <div id="memberEditor">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+              <p class="muted" id="memberCount"></p>
+              <button id="editMembersBtn" class="btn">Edit</button>
+            </div>
+            <div id="memberEditArea" style="display:none;">
+              <label for="memberList">One name per line</label>
+              <textarea id="memberList" rows="5"></textarea>
+              <div style="margin-top:8px; display:flex; gap:8px;">
+                <button id="saveMembersBtn" class="btn primary">Save</button>
+                <button id="cancelMembersBtn" class="btn">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="head"><h2>Capture Feedback</h2></div>
+      <div class="body">
+        <div class="row quad">
+          <div>
+            <label>Member</label>
+            <select id="memberSelect"></select>
+          </div>
+          <div>
+            <label>Session</label>
+            <select id="sessionSelect"></select>
+          </div>
+          <div>
+            <label>Rating</label>
+            <div id="starRating" class="stars" aria-label="Star rating"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label>What worked well?</label>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
+            <button data-like="pacing" class="pill">Pacing</button>
+            <button data-like="examples" class="pill">Examples</button>
+            <button data-like="handsOn" class="pill">Hands-on</button>
+            <button data-like="discussion" class="pill">Discussion</button>
+          </div>
+        </div>
+
+        <div class="row" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-top:12px;">
+          <div>
+            <label>Comments (keep it real)</label>
+            <textarea id="feedback" rows="4" placeholder="What should we keep / change?"></textarea>
+          </div>
+          <div>
+            <label>Future Topics / Interests</label>
+            <textarea id="topics" rows="4" placeholder="What would you like to cover next?"></textarea>
+          </div>
+        </div>
+
+        <div style="margin-top:12px; display:flex; gap:8px;">
+          <button id="saveEntryBtn" class="btn primary">Save Feedback</button>
+          <button id="resetBtn" class="btn">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid two" style="margin-top:16px;">
+      <div class="card">
+        <div class="head"><h2>Average Rating by Session</h2></div>
+        <div class="body" style="height:280px;">
+          <canvas id="chart" width="800" height="280"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="head"><h2>Browse Feedback</h2></div>
+        <div class="body">
+          <div class="row" style="grid-template-columns: 1fr 1fr auto; gap: 10px;">
+            <div>
+              <label>Session</label>
+              <select id="filterSession"></select>
+            </div>
+            <div>
+              <label>Member</label>
+              <select id="filterMember"></select>
+            </div>
+            <div style="align-self:end;">
+              <button id="clearFiltersBtn" class="btn">Clear Filters</button>
+            </div>
+          </div>
+          <div class="scroll" style="margin-top:12px;">
+            <table class="table">
+              <thead>
+                <tr><th>When</th><th>Session</th><th>Member</th><th>Rating</th><th>Highlights</th><th>Comments</th><th>Future Topics</th></tr>
+              </thead>
+              <tbody id="entriesBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>Data is stored locally in your browser. Export CSV to share.</footer>
+  </div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "ai-learning-pod-feedback-v1-github";
+      const DEFAULT_MEMBERS = ["Bryan","Crystal","Florencia","Monica","Tiffany"];
+      const INITIAL_SESSIONS = [{ id: (self.crypto||window.crypto).randomUUID(), title: "Kickoff: Prompts & Guardrails", date: new Date().toISOString().slice(0,10) }];
+
+      function loadState(){
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if(!raw) return { members: DEFAULT_MEMBERS.slice(), sessions: INITIAL_SESSIONS.slice(), entries: [] };
+          const parsed = JSON.parse(raw);
+          return {
+            members: Array.isArray(parsed.members) && parsed.members.length ? parsed.members : DEFAULT_MEMBERS.slice(),
+            sessions: Array.isArray(parsed.sessions) && parsed.sessions.length ? parsed.sessions : INITIAL_SESSIONS.slice(),
+            entries: Array.isArray(parsed.entries) ? parsed.entries : []
+          };
+        } catch { return { members: DEFAULT_MEMBERS.slice(), sessions: INITIAL_SESSIONS.slice(), entries: [] }; }
+      }
+      let state = loadState();
+      function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+      const $ = s => document.querySelector(s);
+      const $$ = s => Array.from(document.querySelectorAll(s));
+      const newDate = $("#newDate"), newTitle = $("#newTitle");
+      const memberSelect = $("#memberSelect"), sessionSelect = $("#sessionSelect");
+      const filterMember = $("#filterMember"), filterSession = $("#filterSession");
+      const starRating = $("#starRating");
+      const entriesBody = $("#entriesBody");
+
+      let selectedMember = state.members[0];
+      let selectedSessionId = state.sessions[0].id;
+      let rating = 0;
+      let likes = { pacing:false, examples:false, handsOn:false, discussion:false };
+      let filterSessionId = "all";
+      let filterMemberVal = "all";
+
+      function escapeHtml(str){ return String(str).replace(/[&<>\"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[s])); }
+      function csvQuote(str){ if(!str) return ""; const needs=/[\",\n]/.test(str); const escaped=String(str).replace(/\"/g,'\"\"'); return needs ? '\"'+escaped+'\"' : escaped; }
+
+      function renderMembers(){
+        $("#memberCount").textContent = state.members.length + " member" + (state.members.length !== 1 ? "s" : "");
+        memberSelect.innerHTML = state.members.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+        if(!state.members.includes(selectedMember)) selectedMember = state.members[0];
+        memberSelect.value = selectedMember;
+        filterMember.innerHTML = `<option value="all">All</option>` + state.members.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+        filterMember.value = filterMemberVal;
+      }
+      function renderSessions(){
+        sessionSelect.innerHTML = state.sessions.map(s => `<option value="${s.id}">${s.date} — ${escapeHtml(s.title)}</option>`).join("");
+        if(!state.sessions.find(s => s.id === selectedSessionId)) selectedSessionId = state.sessions[0]?.id;
+        sessionSelect.value = selectedSessionId;
+        filterSession.innerHTML = `<option value="all">All</option>` + state.sessions.map(s => `<option value="${s.id}">${s.date} — ${escapeHtml(s.title)}</option>`).join("");
+        filterSession.value = filterSessionId;
+      }
+      function renderStars(){
+        starRating.innerHTML = "";
+        for(let n=1;n<=5;n++){
+          const b=document.createElement("button");
+          b.textContent = n <= rating ? "★" : "☆";
+          if(n <= rating) b.classList.add("on");
+          b.addEventListener("click", () => { rating = n; renderStars(); });
+          starRating.appendChild(b);
+        }
+      }
+      function renderLikes(){ $$(".pill").forEach(btn => { const key = btn.getAttribute("data-like"); btn.classList.toggle("on", !!likes[key]); }); }
+      function renderTable(){
+        const filtered = state.entries.filter(e => {
+          if(filterSessionId !== "all" && e.sessionId !== filterSessionId) return false;
+          if(filterMemberVal !== "all" && e.member !== filterMemberVal) return false;
+          return true;
+        });
+        entriesBody.innerHTML = filtered.map(e => `
+          <tr>
+            <td>${new Date(e.createdAt).toLocaleString()}</td>
+            <td>${escapeHtml((state.sessions.find(s => s.id===e.sessionId)||{}).title || "—")}</td>
+            <td>${escapeHtml(e.member)}</td>
+            <td>${"★".repeat(e.rating)}${"☆".repeat(5-e.rating)}</td>
+            <td>${escapeHtml((e.likes||[]).join(", "))}</td>
+            <td>${escapeHtml(e.feedback||"")}</td>
+            <td>${escapeHtml(e.topics||"")}</td>
+          </tr>`).join("");
+      }
+      const chartCanvas = document.getElementById("chart"), ctx = chartCanvas.getContext("2d");
+      function renderChart(){
+        const map = new Map();
+        for(const e of state.entries){
+          if(!map.has(e.sessionId)) map.set(e.sessionId, {count:0,sum:0});
+          const x = map.get(e.sessio
